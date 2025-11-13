@@ -47,3 +47,7 @@ class User(BaseModel, table=True):
         back_populates="resolver",
         sa_relationship_kwargs={"foreign_keys": "ChangeRequest.resolved_by"},
     )
+
+    __table_args__ = (
+        {"sqlite_autoincrement": True},
+    )
