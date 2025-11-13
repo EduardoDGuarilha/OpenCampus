@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
-from sqlalchemy import Boolean, Column, DateTime, Enum as SAEnum, JSON
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, Enum as SAEnum, JSON
 from sqlmodel import Field, Relationship
 
 from .base import BaseModel
@@ -26,7 +26,7 @@ class ChangeRequest(BaseModel, table=True):
     target_type: ReviewTargetType = Field(
         sa_column=Column(SAEnum(ReviewTargetType, name="change_request_target"), nullable=False)
     )
-    suggested_data: dict = Field(sa_column=Column(JSON, nullable=False))
+    suggested_data: Dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
     status: ChangeRequestStatus = Field(
         default=ChangeRequestStatus.PENDING,
         sa_column=Column(SAEnum(ChangeRequestStatus, name="change_request_status"), nullable=False),
@@ -62,3 +62,24 @@ class ChangeRequest(BaseModel, table=True):
     course: Optional["Course"] = Relationship(back_populates="change_requests")
     professor: Optional["Professor"] = Relationship(back_populates="change_requests")
     subject: Optional["Subject"] = Relationship(back_populates="change_requests")
+
+    __table_args__ = (
+        CheckConstraint(
+            (
+                "(" "target_type = 'INSTITUTION' AND institution_id IS NOT NULL "
+                "AND course_id IS NULL AND professor_id IS NULL AND subject_id IS NULL"
+                ") OR ("
+                "target_type = 'COURSE' AND course_id IS NOT NULL AND institution_id IS NULL "
+                "AND professor_id IS NULL AND subject_id IS NULL"
+                ") OR ("
+                "target_type = 'PROFESSOR' AND professor_id IS NOT NULL AND institution_id IS NULL "
+                "AND course_id IS NULL AND subject_id IS NULL"
+                ") OR ("
+                "target_type = 'SUBJECT' AND subject_id IS NOT NULL AND institution_id IS NULL "
+                "AND course_id IS NULL AND professor_id IS NULL"
+                ")"
+            ),
+            name="ck_change_request_target_reference",
+        ),
+        {"sqlite_autoincrement": True},
+    )
