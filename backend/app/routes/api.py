@@ -1,7 +1,14 @@
-"""API router placeholder."""
+"""Primary API router definition."""
 
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/api")
+api_router = APIRouter()
 
-__all__ = ["router"]
+
+@api_router.get("/health", tags=["health"], summary="Health check")
+def health_check() -> dict[str, str]:
+    """Simple health-check endpoint."""
+    return {"status": "ok"}
+
+
+__all__ = ["api_router"]
