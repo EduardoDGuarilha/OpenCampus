@@ -1,5 +1,6 @@
 """Data models package."""
 
-from .institution import Institution
+from app.models.course import Course
+from app.models.institution import Institution
 
-__all__ = ["Institution"]
+__all__ = ["Institution", "Course"]
