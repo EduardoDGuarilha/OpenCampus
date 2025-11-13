@@ -1,4 +1,4 @@
-"""Institution SQLModel definitions."""
+"""Institution SQLModel definition."""
 
 from __future__ import annotations
 
@@ -9,9 +9,17 @@ from sqlmodel import Field, Relationship, SQLModel
 if TYPE_CHECKING:
     from app.models.course import Course
 
+from .base import BaseModel
 
-class Institution(SQLModel, table=True):
-    """Persistence model for academic institutions."""
+if TYPE_CHECKING:  # pragma: no cover
+    from .course import Course
+    from .review import Review
+
+
+class Institution(BaseModel, table=True):
+    """Represents an academic institution available in the platform."""
+
+    __tablename__ = "institutions"
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, nullable=False)
@@ -19,3 +27,4 @@ class Institution(SQLModel, table=True):
 
 
 __all__ = ["Institution"]
+

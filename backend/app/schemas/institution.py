@@ -1,20 +1,20 @@
-"""Pydantic schemas for Institution entity."""
+"""Institution Pydantic schemas."""
 
 from __future__ import annotations
 
 from typing import Optional
 
-from app.schemas.base import SchemaBase
+from .base import SchemaBase
 
 
 class InstitutionBase(SchemaBase):
-    """Shared attributes for Institution schemas."""
+    """Shared Institution schema attributes."""
 
     name: str
 
 
 class InstitutionCreate(InstitutionBase):
-    """Schema for creating an institution."""
+    """Schema for creating a new institution."""
 
 
 class InstitutionUpdate(SchemaBase):
@@ -30,7 +30,6 @@ class InstitutionRead(InstitutionBase):
 
 
 __all__ = [
-    "InstitutionBase",
     "InstitutionCreate",
     "InstitutionUpdate",
     "InstitutionRead",
