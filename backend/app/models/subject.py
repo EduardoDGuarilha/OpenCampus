@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from .base import BaseModel
@@ -26,4 +26,9 @@ class Subject(BaseModel, table=True):
     reviews: List["Review"] = Relationship(back_populates="subject")
     change_requests: List["ChangeRequest"] = Relationship(
         back_populates="subject", sa_relationship_kwargs={"cascade": "all,delete-orphan"}
+    )
+
+    __table_args__ = (
+        UniqueConstraint("course_id", "name", name="uq_subject_course_name"),
+        {"sqlite_autoincrement": True},
     )

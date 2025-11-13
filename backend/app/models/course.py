@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from .base import BaseModel
@@ -34,6 +34,7 @@ class Course(BaseModel, table=True):
         back_populates="course", sa_relationship_kwargs={"cascade": "all,delete-orphan"}
     )
 
-    __table_args__ = (  # type: ignore[assignment]
+    __table_args__ = (
+        UniqueConstraint("institution_id", "name", name="uq_course_institution_name"),
         {"sqlite_autoincrement": True},
     )

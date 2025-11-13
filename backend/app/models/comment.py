@@ -30,3 +30,7 @@ class Comment(BaseModel, table=True):
 
     author: "User" = Relationship(back_populates="comments")
     review: "Review" = Relationship(back_populates="comments")
+
+    __table_args__ = (
+        {"sqlite_autoincrement": True},
+    )

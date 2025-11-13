@@ -5,7 +5,15 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Boolean, Column, DateTime, Enum as SAEnum, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Enum as SAEnum,
+    Text,
+    UniqueConstraint,
+)
 from sqlmodel import Field, Relationship
 
 from .base import BaseModel
@@ -72,4 +80,22 @@ class Review(BaseModel, table=True):
         UniqueConstraint("user_id", "course_id", name="uq_review_user_course"),
         UniqueConstraint("user_id", "professor_id", name="uq_review_user_professor"),
         UniqueConstraint("user_id", "subject_id", name="uq_review_user_subject"),
+        CheckConstraint(
+            (
+                "(" "target_type = 'INSTITUTION' AND institution_id IS NOT NULL "
+                "AND course_id IS NULL AND professor_id IS NULL AND subject_id IS NULL"
+                ") OR ("
+                "target_type = 'COURSE' AND course_id IS NOT NULL AND institution_id IS NULL "
+                "AND professor_id IS NULL AND subject_id IS NULL"
+                ") OR ("
+                "target_type = 'PROFESSOR' AND professor_id IS NOT NULL AND institution_id IS NULL "
+                "AND course_id IS NULL AND subject_id IS NULL"
+                ") OR ("
+                "target_type = 'SUBJECT' AND subject_id IS NOT NULL AND institution_id IS NULL "
+                "AND course_id IS NULL AND professor_id IS NULL"
+                ")"
+            ),
+            name="ck_review_target_reference",
+        ),
+        {"sqlite_autoincrement": True},
     )
