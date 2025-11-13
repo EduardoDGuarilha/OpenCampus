@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.routes.institution import router as institution_router
 
 api_router = APIRouter()
+api_router.include_router(institution_router)
 
 
 @api_router.get("/health", tags=["health"], summary="Health check")
