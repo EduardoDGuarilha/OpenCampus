@@ -1,5 +1,5 @@
 """Routes package."""
 
-from app.routes.api import router
+from app.routes.api import api_router
 
-__all__ = ["router"]
+__all__ = ["api_router"]

@@ -1,14 +1,18 @@
 """Database session management utilities."""
 
-from typing import Generator
+from collections.abc import Generator
 
 from sqlmodel import Session, SQLModel, create_engine
 
-from app.core.config.settings import get_settings
+from app.core.config import settings
 
 
-settings = get_settings()
-engine = create_engine("sqlite:///./opencampus.db", echo=False, future=True)
+engine = create_engine(
+    settings.database_url,
+    echo=False,
+    future=True,
+    connect_args={"check_same_thread": False},
+)
 
 
 def init_db() -> None:
