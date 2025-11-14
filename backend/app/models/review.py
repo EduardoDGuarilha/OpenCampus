@@ -9,6 +9,7 @@ from typing import List, Optional, TYPE_CHECKING
 from sqlmodel import Field, Relationship
 
 from .base import BaseModel
+from app.models.user import User
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.models.comment import Comment
@@ -16,7 +17,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from app.models.institution import Institution
     from app.models.professor import Professor
     from app.models.subject import Subject
-    from app.models.user import User
 
 
 class ReviewTargetType(str, Enum):
@@ -75,7 +75,7 @@ class Review(BaseModel, table=True):
     resolved_at: Optional[datetime] = Field(default=None, nullable=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    user: "User" = Relationship(back_populates="reviews")
+    user: User = Relationship(back_populates="reviews")
     institution: Optional["Institution"] = Relationship(back_populates="reviews")
     course: Optional["Course"] = Relationship(back_populates="reviews")
     professor: Optional["Professor"] = Relationship(back_populates="reviews")
