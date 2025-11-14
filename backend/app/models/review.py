@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 from sqlmodel import Field, Relationship
 
 from .base import BaseModel
 
 if TYPE_CHECKING:  # pragma: no cover
+    from app.models.comment import Comment
     from app.models.course import Course
     from app.models.institution import Institution
     from app.models.professor import Professor
@@ -72,6 +73,7 @@ class Review(BaseModel, table=True):
     course: Optional["Course"] = Relationship(back_populates="reviews")
     professor: Optional["Professor"] = Relationship(back_populates="reviews")
     subject: Optional["Subject"] = Relationship(back_populates="reviews")
+    comments: List["Comment"] = Relationship(back_populates="review")
 
 
 __all__ = ["Review", "ReviewTargetType"]

@@ -1,5 +1,6 @@
 """Domain service layer package."""
 
+from app.services.comment import CommentService
 from app.services.course import (
     create_course,
     delete_course,
@@ -34,4 +35,5 @@ __all__ = [
     "ReviewService",
     "UserService",
     "SubjectService",
+    "CommentService",
 ]

@@ -1,5 +1,6 @@
 """Data models package."""
 
+from app.models.comment import Comment
 from app.models.course import Course
 from app.models.institution import Institution
 from app.models.professor import Professor
@@ -16,4 +17,5 @@ __all__ = [
     "Subject",
     "User",
     "UserRole",
+    "Comment",
 ]
