@@ -18,6 +18,18 @@ from app.schemas.professor import (
     ProfessorRead,
     ProfessorUpdate,
 )
+from app.schemas.review import (
+    ReviewBase,
+    ReviewCreate,
+    ReviewRead,
+    ReviewUpdate,
+)
+from app.schemas.subject import (
+    SubjectBase,
+    SubjectCreate,
+    SubjectRead,
+    SubjectUpdate,
+)
 from app.schemas.user import (
     UserBase,
     UserCreate,
@@ -38,6 +50,14 @@ __all__ = [
     "ProfessorCreate",
     "ProfessorRead",
     "ProfessorUpdate",
+    "ReviewBase",
+    "ReviewCreate",
+    "ReviewRead",
+    "ReviewUpdate",
+    "SubjectBase",
+    "SubjectCreate",
+    "SubjectRead",
+    "SubjectUpdate",
     "UserBase",
     "UserCreate",
     "UserRead",

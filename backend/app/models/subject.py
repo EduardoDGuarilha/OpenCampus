@@ -1,4 +1,4 @@
-"""Institution SQLModel definition."""
+"""Subject SQLModel definition."""
 
 from __future__ import annotations
 
@@ -13,16 +13,17 @@ if TYPE_CHECKING:  # pragma: no cover
     from app.models.review import Review
 
 
-class Institution(BaseModel, table=True):
-    """Represents an academic institution available in the platform."""
+class Subject(BaseModel, table=True):
+    """Represents an academic subject tied to a course."""
 
-    __tablename__ = "institutions"
+    __tablename__ = "subjects"
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, nullable=False)
-    courses: List["Course"] = Relationship(back_populates="institution")
-    reviews: List["Review"] = Relationship(back_populates="institution")
+    course_id: int = Field(foreign_key="course.id", nullable=False, index=True)
+
+    course: "Course" = Relationship(back_populates="subjects")
+    reviews: List["Review"] = Relationship(back_populates="subject")
 
 
-__all__ = ["Institution"]
-
+__all__ = ["Subject"]
