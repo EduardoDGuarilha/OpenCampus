@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional
 
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import Mapped, relationship
+from sqlmodel import Field
 
 from .base import BaseModel
-
-if TYPE_CHECKING:  # pragma: no cover
-    from app.models.course import Course
-    from app.models.review import Review
 
 
 class Professor(BaseModel, table=True):
@@ -26,8 +23,8 @@ class Professor(BaseModel, table=True):
         index=True,
     )
 
-    course: "Course" = Relationship(back_populates="professors")
-    reviews: List["Review"] = Relationship(back_populates="professor")
+    course: Mapped["Course"] = relationship(back_populates="professors")
+    reviews: Mapped[list["Review"]] = relationship(back_populates="professor")
 
 
 __all__ = ["Professor"]

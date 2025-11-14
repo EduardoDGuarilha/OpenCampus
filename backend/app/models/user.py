@@ -3,17 +3,13 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional
 
 from sqlalchemy import Column, String
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import Mapped, relationship
+from sqlmodel import Field
 
 from .base import BaseModel
-
-
-if TYPE_CHECKING:  # pragma: no cover
-    from app.models.comment import Comment
-    from app.models.review import Review
 
 
 class UserRole(str, Enum):
@@ -41,8 +37,8 @@ class User(BaseModel, table=True):
     role: UserRole = Field(nullable=False)
     validated: bool = Field(default=False, nullable=False)
 
-    reviews: List["Review"] = Relationship(back_populates="user")
-    comments: List["Comment"] = Relationship(back_populates="user")
+    reviews: Mapped[list["Review"]] = relationship(back_populates="user")
+    comments: Mapped[list["Comment"]] = relationship(back_populates="user")
 
 
 __all__ = ["User", "UserRole"]

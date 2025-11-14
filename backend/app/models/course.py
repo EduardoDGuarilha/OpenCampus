@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy.orm import Mapped, relationship
+from sqlmodel import Field
 
-if TYPE_CHECKING:
-    from app.models.institution import Institution
-    from app.models.professor import Professor
-    from app.models.review import Review
-    from app.models.subject import Subject
+from .base import BaseModel
 
 
-class Course(SQLModel, table=True):
+class Course(BaseModel, table=True):
     """Persistence model for academic courses."""
 
     __tablename__ = "courses"
@@ -26,10 +23,10 @@ class Course(SQLModel, table=True):
         index=True,
     )
 
-    institution: "Institution" = Relationship(back_populates="courses")
-    professors: List["Professor"] = Relationship(back_populates="course")
-    subjects: List["Subject"] = Relationship(back_populates="course")
-    reviews: List["Review"] = Relationship(back_populates="course")
+    institution: Mapped["Institution"] = relationship(back_populates="courses")
+    professors: Mapped[list["Professor"]] = relationship(back_populates="course")
+    subjects: Mapped[list["Subject"]] = relationship(back_populates="course")
+    reviews: Mapped[list["Review"]] = relationship(back_populates="course")
 
 
 __all__ = ["Course"]
