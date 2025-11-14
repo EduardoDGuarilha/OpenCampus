@@ -47,7 +47,13 @@ class SubjectService:
         self.session.refresh(subject)
         return SubjectRead.model_validate(subject)
 
-    def update_subject(self, subject_id: int, payload: SubjectUpdate) -> SubjectRead:
+    def update_subject(
+        self,
+        subject_id: int,
+        payload: SubjectUpdate,
+        *,
+        commit: bool = True,
+    ) -> SubjectRead:
         subject = self.get_subject(subject_id)
         update_data = payload.model_dump(exclude_unset=True)
 
@@ -81,8 +87,11 @@ class SubjectService:
         subject.course_id = target_course_id
 
         self.session.add(subject)
-        self.session.commit()
-        self.session.refresh(subject)
+        if commit:
+            self.session.commit()
+            self.session.refresh(subject)
+        else:
+            self.session.flush()
         return SubjectRead.model_validate(subject)
 
     def delete_subject(self, subject_id: int) -> None:

@@ -62,7 +62,13 @@ class InstitutionService:
         self.session.refresh(institution)
         return InstitutionRead.model_validate(institution)
 
-    def update_institution(self, institution_id: int, payload: InstitutionUpdate) -> InstitutionRead:
+    def update_institution(
+        self,
+        institution_id: int,
+        payload: InstitutionUpdate,
+        *,
+        commit: bool = True,
+    ) -> InstitutionRead:
         institution = self.get_institution(institution_id)
 
         if payload.name is not None:
@@ -72,8 +78,11 @@ class InstitutionService:
                 institution.name = normalized_name
 
         self.session.add(institution)
-        self.session.commit()
-        self.session.refresh(institution)
+        if commit:
+            self.session.commit()
+            self.session.refresh(institution)
+        else:
+            self.session.flush()
         return InstitutionRead.model_validate(institution)
 
     def delete_institution(self, institution_id: int) -> None:

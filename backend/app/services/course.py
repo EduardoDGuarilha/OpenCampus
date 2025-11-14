@@ -47,7 +47,12 @@ def create_course(session: Session, payload: Mapping[str, Any]) -> Course:
 
 
 def update_course(
-    session: Session, course: Course, payload: Mapping[str, Any]
+    session: Session,
+    course: Course,
+    payload: Mapping[str, Any],
+    *,
+    commit: bool = True,
+    refresh: bool = True,
 ) -> Course:
     """Update an existing course, validating the institution when provided."""
 
@@ -58,8 +63,12 @@ def update_course(
         setattr(course, field, value)
 
     session.add(course)
-    session.commit()
-    session.refresh(course)
+    if commit:
+        session.commit()
+        if refresh:
+            session.refresh(course)
+    else:
+        session.flush()
     return course
 
 

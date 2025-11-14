@@ -123,15 +123,16 @@ class ChangeRequestService:
                 detail="Only pending change requests may be resolved.",
             )
 
-        if new_status == ChangeRequestStatus.APPROVED:
-            self._apply_updates(change_request)
+        with self.session.begin():
+            if new_status == ChangeRequestStatus.APPROVED:
+                self._apply_updates(change_request)
 
-        change_request.status = new_status
-        change_request.resolved_by = current_user.id
-        change_request.resolved_at = datetime.utcnow()
+            change_request.status = new_status
+            change_request.resolved_by = current_user.id
+            change_request.resolved_at = datetime.utcnow()
 
-        self.session.add(change_request)
-        self.session.commit()
+            self.session.add(change_request)
+
         self.session.refresh(change_request)
         return ChangeRequestRead.model_validate(change_request)
 
@@ -250,7 +251,7 @@ class ChangeRequestService:
             ) from exc
 
         service = InstitutionService(self.session)
-        service.update_institution(institution_id, payload)
+        service.update_institution(institution_id, payload, commit=False)
 
     def _update_course(self, course_id: int, update_data: Mapping[str, Any]) -> None:
         """Apply approved updates to a course using existing course services."""
@@ -270,7 +271,13 @@ class ChangeRequestService:
                 detail="Course not found.",
             )
         update_payload = payload.model_dump(exclude_unset=True)
-        update_course(self.session, course, update_payload)
+        update_course(
+            self.session,
+            course,
+            update_payload,
+            commit=False,
+            refresh=False,
+        )
 
     def _update_professor(self, professor_id: int, update_data: Mapping[str, Any]) -> None:
         """Apply approved updates to a professor through its service."""
@@ -284,7 +291,7 @@ class ChangeRequestService:
             ) from exc
 
         service = ProfessorService(self.session)
-        service.update_professor(professor_id, payload)
+        service.update_professor(professor_id, payload, commit=False)
 
     def _update_subject(self, subject_id: int, update_data: Mapping[str, Any]) -> None:
         """Apply approved updates to a subject through its service."""
@@ -298,7 +305,7 @@ class ChangeRequestService:
             ) from exc
 
         service = SubjectService(self.session)
-        service.update_subject(subject_id, payload)
+        service.update_subject(subject_id, payload, commit=False)
 
 
 __all__ = ["ChangeRequestService"]
