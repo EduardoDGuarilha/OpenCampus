@@ -1,5 +1,11 @@
 """Pydantic schemas package."""
 
+from app.schemas.change_request import (
+    ChangeRequestBase,
+    ChangeRequestCreate,
+    ChangeRequestRead,
+    ChangeRequestUpdate,
+)
 from app.schemas.comment import (
     CommentBase,
     CommentCreate,
@@ -44,6 +50,10 @@ from app.schemas.user import (
 )
 
 __all__ = [
+    "ChangeRequestBase",
+    "ChangeRequestCreate",
+    "ChangeRequestRead",
+    "ChangeRequestUpdate",
     "CommentBase",
     "CommentCreate",
     "CommentRead",
