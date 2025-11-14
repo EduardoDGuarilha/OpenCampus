@@ -5,10 +5,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.auth.dependencies import get_current_user
 from app.database.session import get_session
 from app.schemas.subject import SubjectCreate, SubjectRead, SubjectUpdate
 from app.services.subject import SubjectService
+from app.routes.course import require_moderator
 
 router = APIRouter(prefix="/subjects", tags=["subjects"])
 
@@ -55,7 +55,7 @@ def get_subject(
 def create_subject(
     payload: SubjectCreate,
     service: SubjectService = Depends(get_subject_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> SubjectRead:
     """Create a new subject linked to a course."""
 
@@ -71,7 +71,7 @@ def update_subject(
     subject_id: int,
     payload: SubjectUpdate,
     service: SubjectService = Depends(get_subject_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> SubjectRead:
     """Update an existing subject entry."""
 
@@ -86,7 +86,7 @@ def update_subject(
 def delete_subject(
     subject_id: int,
     service: SubjectService = Depends(get_subject_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> None:
     """Delete a subject by its identifier."""
 

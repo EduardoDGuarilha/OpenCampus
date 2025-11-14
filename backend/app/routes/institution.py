@@ -5,7 +5,6 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.auth.dependencies import get_current_user
 from app.database.session import get_session
 from app.schemas.institution import (
     InstitutionCreate,
@@ -13,6 +12,7 @@ from app.schemas.institution import (
     InstitutionUpdate,
 )
 from app.services.institution import InstitutionService
+from app.routes.course import require_moderator
 
 
 router = APIRouter(prefix="/institutions", tags=["institutions"])
@@ -62,7 +62,7 @@ def get_institution(
 def create_institution(
     payload: InstitutionCreate,
     service: InstitutionService = Depends(get_institution_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> InstitutionRead:
     """Create a new institution entry."""
 
@@ -78,7 +78,7 @@ def update_institution(
     institution_id: int,
     payload: InstitutionUpdate,
     service: InstitutionService = Depends(get_institution_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> InstitutionRead:
     """Update an existing institution."""
 
@@ -93,7 +93,7 @@ def update_institution(
 def delete_institution(
     institution_id: int,
     service: InstitutionService = Depends(get_institution_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> None:
     """Delete an institution by its identifier."""
 
