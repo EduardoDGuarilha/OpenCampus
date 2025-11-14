@@ -8,10 +8,10 @@ from typing import Optional, TYPE_CHECKING
 from sqlmodel import Field, Relationship
 
 from .base import BaseModel
+from app.models.user import User
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.models.review import Review
-    from app.models.user import User
 
 
 class Comment(BaseModel, table=True):
@@ -26,7 +26,7 @@ class Comment(BaseModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     is_official: bool = Field(default=False, nullable=False)
 
-    user: "User" = Relationship(back_populates="comments")
+    user: User = Relationship(back_populates="comments")
     review: "Review" = Relationship(back_populates="comments")
 
 
