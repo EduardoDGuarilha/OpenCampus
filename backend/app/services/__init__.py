@@ -1,41 +1,35 @@
-"""Domain service layer package."""
+"""Domain service layer package with lazy imports."""
 
-from app.services.comment import CommentService
-from app.services.course import (
-    create_course,
-    delete_course,
-    get_course,
-    list_courses,
-    update_course,
-)
-from app.services.institution import (
-    create_institution,
-    delete_institution,
-    get_institution,
-    list_institutions,
-    update_institution,
-)
-from app.services.change_request import ChangeRequestService
-from app.services.professor import ProfessorService
-from app.services.review import ReviewService
-from app.services.user import UserService
-from app.services.subject import SubjectService
+from importlib import import_module
+from typing import Any, Dict
 
-__all__ = [
-    "ChangeRequestService",
-    "create_course",
-    "delete_course",
-    "get_course",
-    "list_courses",
-    "update_course",
-    "create_institution",
-    "delete_institution",
-    "get_institution",
-    "list_institutions",
-    "update_institution",
-    "ProfessorService",
-    "ReviewService",
-    "UserService",
-    "SubjectService",
-    "CommentService",
-]
+_MODULE_MAP: Dict[str, str] = {
+    "ChangeRequestService": "change_request",
+    "CommentService": "comment",
+    "ProfessorService": "professor",
+    "ReviewService": "review",
+    "SubjectService": "subject",
+    "UserService": "user",
+    "create_course": "course",
+    "delete_course": "course",
+    "get_course": "course",
+    "list_courses": "course",
+    "update_course": "course",
+    "create_institution": "institution",
+    "delete_institution": "institution",
+    "get_institution": "institution",
+    "list_institutions": "institution",
+    "update_institution": "institution",
+}
+
+__all__ = sorted(_MODULE_MAP)
+
+
+def __getattr__(name: str) -> Any:
+    """Import service symbols on demand."""
+
+    module_name = _MODULE_MAP.get(name)
+    if module_name is None:
+        raise AttributeError(f"module 'app.services' has no attribute {name!r}")
+    module = import_module(f"app.services.{module_name}")
+    return getattr(module, name)

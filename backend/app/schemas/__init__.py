@@ -1,88 +1,53 @@
-"""Pydantic schemas package."""
+"""Pydantic schemas package with lazy imports to avoid side effects."""
 
-from app.schemas.auth import LoginRequest, TokenResponse
-from app.schemas.change_request import (
-    ChangeRequestBase,
-    ChangeRequestCreate,
-    ChangeRequestRead,
-    ChangeRequestUpdate,
-)
-from app.schemas.comment import (
-    CommentBase,
-    CommentCreate,
-    CommentRead,
-    CommentUpdate,
-)
-from app.schemas.course import (
-    CourseBase,
-    CourseCreate,
-    CourseRead,
-    CourseUpdate,
-)
-from app.schemas.institution import (
-    InstitutionBase,
-    InstitutionCreate,
-    InstitutionRead,
-    InstitutionUpdate,
-)
-from app.schemas.professor import (
-    ProfessorBase,
-    ProfessorCreate,
-    ProfessorRead,
-    ProfessorUpdate,
-)
-from app.schemas.review import (
-    ReviewBase,
-    ReviewCreate,
-    ReviewRead,
-    ReviewUpdate,
-)
-from app.schemas.subject import (
-    SubjectBase,
-    SubjectCreate,
-    SubjectRead,
-    SubjectUpdate,
-)
-from app.schemas.user import (
-    UserBase,
-    UserCreate,
-    UserRead,
-    UserUpdate,
-)
+from importlib import import_module
+from typing import Any, Dict
 
-__all__ = [
-    "ChangeRequestBase",
-    "ChangeRequestCreate",
-    "ChangeRequestRead",
-    "ChangeRequestUpdate",
-    "LoginRequest",
-    "CommentBase",
-    "CommentCreate",
-    "CommentRead",
-    "CommentUpdate",
-    "CourseBase",
-    "CourseCreate",
-    "CourseRead",
-    "CourseUpdate",
-    "InstitutionBase",
-    "InstitutionCreate",
-    "InstitutionRead",
-    "InstitutionUpdate",
-    "ProfessorBase",
-    "ProfessorCreate",
-    "ProfessorRead",
-    "ProfessorUpdate",
-    "ReviewBase",
-    "ReviewCreate",
-    "ReviewRead",
-    "ReviewUpdate",
-    "SubjectBase",
-    "SubjectCreate",
-    "SubjectRead",
-    "SubjectUpdate",
-    "TokenResponse",
-    "UserBase",
-    "UserCreate",
-    "UserRead",
-    "UserUpdate",
-]
+_MODULE_MAP: Dict[str, str] = {
+    "LoginRequest": "auth",
+    "TokenResponse": "auth",
+    "ChangeRequestBase": "change_request",
+    "ChangeRequestCreate": "change_request",
+    "ChangeRequestRead": "change_request",
+    "ChangeRequestUpdate": "change_request",
+    "CommentBase": "comment",
+    "CommentCreate": "comment",
+    "CommentRead": "comment",
+    "CommentUpdate": "comment",
+    "CourseBase": "course",
+    "CourseCreate": "course",
+    "CourseRead": "course",
+    "CourseUpdate": "course",
+    "InstitutionBase": "institution",
+    "InstitutionCreate": "institution",
+    "InstitutionRead": "institution",
+    "InstitutionUpdate": "institution",
+    "ProfessorBase": "professor",
+    "ProfessorCreate": "professor",
+    "ProfessorRead": "professor",
+    "ProfessorUpdate": "professor",
+    "ReviewBase": "review",
+    "ReviewCreate": "review",
+    "ReviewRead": "review",
+    "ReviewUpdate": "review",
+    "SubjectBase": "subject",
+    "SubjectCreate": "subject",
+    "SubjectRead": "subject",
+    "SubjectUpdate": "subject",
+    "UserBase": "user",
+    "UserCreate": "user",
+    "UserRead": "user",
+    "UserUpdate": "user",
+}
+
+__all__ = sorted(_MODULE_MAP)
+
+
+def __getattr__(name: str) -> Any:
+    """Dynamically import schema symbols on demand."""
+
+    module_name = _MODULE_MAP.get(name)
+    if module_name is None:
+        raise AttributeError(f"module 'app.schemas' has no attribute {name!r}")
+    module = import_module(f"app.schemas.{module_name}")
+    return getattr(module, name)
