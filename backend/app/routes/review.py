@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
 from app.auth.dependencies import get_current_user
 from app.database.session import get_session
-from app.models import ReviewTargetType, User
+from app.models import ReviewTargetType, User, UserRole
 from app.schemas.review import ReviewCreate, ReviewRead, ReviewUpdate
 from app.services.review import ReviewService
 
@@ -18,6 +18,17 @@ def get_review_service(session: Session = Depends(get_session)) -> ReviewService
     """Dependency injector for :class:`ReviewService`."""
 
     return ReviewService(session)
+
+
+def require_moderator(current_user: User = Depends(get_current_user)) -> User:
+    """Ensure the requester has moderator privileges."""
+
+    if current_user.role != UserRole.MODERATOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only moderators may access review moderation endpoints.",
+        )
+    return current_user
 
 
 @router.get("", response_model=list[ReviewRead], summary="List reviews")
@@ -104,6 +115,60 @@ def delete_review(
     """Remove a review leveraging the service authorization rules."""
 
     service.delete_review(review_id, current_user=current_user)
+
+
+@router.get(
+    "/moderation/pending",
+    response_model=list[ReviewRead],
+    summary="List pending reviews for moderation",
+)
+def list_pending_reviews_for_moderation(
+    skip: int = 0,
+    limit: int = Query(default=100, le=100),
+    target_type: ReviewTargetType | None = None,
+    target_id: int | None = None,
+    service: ReviewService = Depends(get_review_service),
+    current_user: User = Depends(require_moderator),
+) -> list[ReviewRead]:
+    """Return pending reviews restricted to moderators."""
+
+    reviews = service.list_pending_reviews(
+        target_type=target_type,
+        target_id=target_id,
+        skip=skip,
+        limit=limit,
+    )
+    return list(reviews)
+
+
+@router.post(
+    "/{review_id}/approve",
+    response_model=ReviewRead,
+    summary="Approve review",
+)
+def approve_review(
+    review_id: int,
+    service: ReviewService = Depends(get_review_service),
+    current_user: User = Depends(require_moderator),
+) -> ReviewRead:
+    """Approve a pending review as a moderator."""
+
+    return service.approve_review(review_id, current_user=current_user)
+
+
+@router.post(
+    "/{review_id}/reject",
+    response_model=ReviewRead,
+    summary="Reject review",
+)
+def reject_review(
+    review_id: int,
+    service: ReviewService = Depends(get_review_service),
+    current_user: User = Depends(require_moderator),
+) -> ReviewRead:
+    """Reject a pending review as a moderator."""
+
+    return service.reject_review(review_id, current_user=current_user)
 
 
 @router.get(

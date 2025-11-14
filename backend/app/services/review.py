@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any, Callable, Mapping, MutableMapping
 
 from fastapi import HTTPException, status
@@ -44,6 +45,8 @@ class ReviewService:
 
         statement = select(Review).order_by(Review.created_at.desc()).offset(skip).limit(limit)
 
+        statement = statement.where(Review.rejected.is_(False))
+
         if not include_pending:
             statement = statement.where(Review.approved.is_(True))
 
@@ -68,7 +71,13 @@ class ReviewService:
         """Retrieve a review enforcing visibility of pending entries."""
 
         review = self.session.get(Review, review_id)
-        if review is None or (not include_pending and not review.approved):
+        if review is None or review.rejected:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Review not found.",
+            )
+
+        if not include_pending and not review.approved:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Review not found.",
@@ -160,7 +169,18 @@ class ReviewService:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Only moderators may change approval status.",
                 )
-            review.approved = bool(update_data["approved"])
+
+            approved_value = bool(update_data["approved"])
+            if approved_value:
+                review.approved = True
+                review.rejected = False
+                review.resolved_by = current_user.id
+                review.resolved_at = datetime.utcnow()
+            else:
+                review.approved = False
+                review.rejected = False
+                review.resolved_by = None
+                review.resolved_at = None
 
         for field in requested_edit:
             value = update_data[field]
@@ -204,6 +224,95 @@ class ReviewService:
         self.session.delete(review)
         self.session.commit()
 
+    def list_pending_reviews(
+        self,
+        *,
+        target_type: ReviewTargetType | None = None,
+        target_id: int | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Sequence[ReviewRead]:
+        """Return pending reviews awaiting moderation decisions."""
+
+        statement = (
+            select(Review)
+            .where(Review.approved.is_(False))
+            .where(Review.rejected.is_(False))
+            .order_by(Review.created_at.asc())
+            .offset(skip)
+            .limit(limit)
+        )
+
+        if target_type is not None:
+            statement = statement.where(Review.target_type == target_type)
+            if target_id is not None:
+                target_field = self._target_field_for_type(target_type)
+                statement = statement.where(getattr(Review, target_field) == target_id)
+        elif target_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="target_type is required when filtering by target_id.",
+            )
+
+        reviews = self.session.exec(statement).all()
+        return [ReviewRead.model_validate(review) for review in reviews]
+
+    def approve_review(self, review_id: int, *, current_user: User) -> ReviewRead:
+        """Approve a pending review and capture moderator metadata."""
+
+        self._ensure_moderator(current_user)
+        review = self._get_review_for_moderation(review_id)
+
+        if review.approved:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Review has already been approved.",
+            )
+
+        if review.rejected:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Review has already been rejected.",
+            )
+
+        review.approved = True
+        review.rejected = False
+        review.resolved_by = current_user.id
+        review.resolved_at = datetime.utcnow()
+
+        self.session.add(review)
+        self.session.commit()
+        self.session.refresh(review)
+        return ReviewRead.model_validate(review)
+
+    def reject_review(self, review_id: int, *, current_user: User) -> ReviewRead:
+        """Reject a pending review and capture moderator metadata."""
+
+        self._ensure_moderator(current_user)
+        review = self._get_review_for_moderation(review_id)
+
+        if review.approved:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Approved reviews cannot be rejected.",
+            )
+
+        if review.rejected:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Review has already been rejected.",
+            )
+
+        review.approved = False
+        review.rejected = True
+        review.resolved_by = current_user.id
+        review.resolved_at = datetime.utcnow()
+
+        self.session.add(review)
+        self.session.commit()
+        self.session.refresh(review)
+        return ReviewRead.model_validate(review)
+
     def ensure_can_comment(self, review_id: int) -> Review:
         """Ensure comments can be created only for approved reviews."""
 
@@ -237,6 +346,7 @@ class ReviewService:
             .where(Review.target_type == target_type)
             .where(getattr(Review, target_field) == target_id)
             .where(Review.approved.is_(True))
+            .where(Review.rejected.is_(False))
         )
 
         count, avg1, avg2, avg3, avg4, avg5 = self.session.exec(statement).one()
@@ -327,6 +437,26 @@ class ReviewService:
                 detail=f"{field} must be between 1 and 5.",
             )
         return int(value)
+
+    def _get_review_for_moderation(self, review_id: int) -> Review:
+        """Retrieve a review without visibility restrictions for moderators."""
+
+        review = self.session.get(Review, review_id)
+        if review is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Review not found.",
+            )
+        return review
+
+    def _ensure_moderator(self, current_user: User) -> None:
+        """Ensure the acting user has moderator privileges."""
+
+        if current_user.role != UserRole.MODERATOR:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only moderators may perform this action.",
+            )
 
 
 __all__ = ["ReviewService"]

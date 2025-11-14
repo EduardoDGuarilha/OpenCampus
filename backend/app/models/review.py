@@ -66,6 +66,13 @@ class Review(BaseModel, table=True):
 
     text: str = Field(nullable=False)
     approved: bool = Field(default=False, nullable=False, index=True)
+    rejected: bool = Field(default=False, nullable=False, index=True)
+    resolved_by: Optional[int] = Field(
+        default=None,
+        foreign_key="users.id",
+        index=True,
+    )
+    resolved_at: Optional[datetime] = Field(default=None, nullable=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
     user: "User" = Relationship(back_populates="reviews")
