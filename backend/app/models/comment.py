@@ -5,13 +5,14 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import Mapped, relationship
+from sqlmodel import Field
 
 from .base import BaseModel
 
 if TYPE_CHECKING:  # pragma: no cover
-    from app.models.review import Review
-    from app.models.user import User
+    from .review import Review
+    from .user import User
 
 
 class Comment(BaseModel, table=True):
@@ -26,8 +27,8 @@ class Comment(BaseModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     is_official: bool = Field(default=False, nullable=False)
 
-    user: "User" = Relationship(back_populates="comments")
-    review: "Review" = Relationship(back_populates="comments")
+    user: Mapped["User"] = relationship(back_populates="comments")
+    review: Mapped["Review"] = relationship(back_populates="comments")
 
 
 __all__ = ["Comment"]

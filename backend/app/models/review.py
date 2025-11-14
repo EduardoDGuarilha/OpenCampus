@@ -4,19 +4,19 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import Mapped, relationship
+from sqlmodel import Field
 
 from .base import BaseModel
 
 if TYPE_CHECKING:  # pragma: no cover
-    from app.models.comment import Comment
-    from app.models.course import Course
-    from app.models.institution import Institution
-    from app.models.professor import Professor
-    from app.models.subject import Subject
-    from app.models.user import User
+    from .course import Course
+    from .institution import Institution
+    from .professor import Professor
+    from .subject import Subject
+    from .user import User
 
 
 class ReviewTargetType(str, Enum):
@@ -75,12 +75,12 @@ class Review(BaseModel, table=True):
     resolved_at: Optional[datetime] = Field(default=None, nullable=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    user: "User" = Relationship(back_populates="reviews")
-    institution: Optional["Institution"] = Relationship(back_populates="reviews")
-    course: Optional["Course"] = Relationship(back_populates="reviews")
-    professor: Optional["Professor"] = Relationship(back_populates="reviews")
-    subject: Optional["Subject"] = Relationship(back_populates="reviews")
-    comments: List["Comment"] = Relationship(back_populates="review")
+    user: Mapped["User"] = relationship(back_populates="reviews")
+    institution: Mapped[Optional["Institution"]] = relationship(back_populates="reviews")
+    course: Mapped[Optional["Course"]] = relationship(back_populates="reviews")
+    professor: Mapped[Optional["Professor"]] = relationship(back_populates="reviews")
+    subject: Mapped[Optional["Subject"]] = relationship(back_populates="reviews")
+    comments: Mapped[list["Comment"]] = relationship(back_populates="review")
 
 
 __all__ = ["Review", "ReviewTargetType"]
