@@ -1,86 +1,104 @@
-"""Institution API routes."""
+"""API router for Institution entity operations."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
+from app.auth.dependencies import get_current_user
 from app.database.session import get_session
-from app.schemas import InstitutionCreate, InstitutionRead, InstitutionUpdate
-from app.services import (
-    create_institution,
-    delete_institution,
-    get_institution,
-    list_institutions,
-    update_institution,
+from app.schemas.institution import (
+    InstitutionCreate,
+    InstitutionRead,
+    InstitutionUpdate,
 )
+from app.services.institution import InstitutionService
+
 
 router = APIRouter(prefix="/institutions", tags=["institutions"])
 
 
-@router.get("/", response_model=list[InstitutionRead])
-def list_institutions_endpoint(
+def get_institution_service(
     session: Session = Depends(get_session),
+) -> InstitutionService:
+    """Dependency provider for :class:`InstitutionService`."""
+
+    return InstitutionService(session)
+
+
+@router.get("", response_model=list[InstitutionRead], summary="List institutions")
+def list_institutions(
+    skip: int = 0,
+    limit: int = 100,
+    service: InstitutionService = Depends(get_institution_service),
 ) -> list[InstitutionRead]:
-    """Return all institutions."""
+    """Retrieve a paginated list of institutions."""
 
-    institutions = list_institutions(session)
-    return [InstitutionRead.model_validate(institution) for institution in institutions]
+    institutions = service.list_institutions(skip=skip, limit=limit)
+    return list(institutions)
 
 
-@router.post("/", response_model=InstitutionRead, status_code=status.HTTP_201_CREATED)
-def create_institution_endpoint(
+@router.get(
+    "/{institution_id}",
+    response_model=InstitutionRead,
+    summary="Get institution by ID",
+)
+def get_institution(
+    institution_id: int,
+    service: InstitutionService = Depends(get_institution_service),
+) -> InstitutionRead:
+    """Fetch a single institution by its identifier."""
+
+    institution = service.get_institution(institution_id)
+    return InstitutionRead.model_validate(institution)
+
+
+@router.post(
+    "",
+    response_model=InstitutionRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create institution",
+)
+def create_institution(
     payload: InstitutionCreate,
-    session: Session = Depends(get_session),
+    service: InstitutionService = Depends(get_institution_service),
+    _current_user: object = Depends(get_current_user),
 ) -> InstitutionRead:
     """Create a new institution entry."""
 
-    institution = create_institution(session, payload.model_dump())
-    return InstitutionRead.model_validate(institution)
+    return service.create_institution(payload)
 
 
-@router.get("/{institution_id}", response_model=InstitutionRead)
-def retrieve_institution_endpoint(
-    institution_id: int,
-    session: Session = Depends(get_session),
-) -> InstitutionRead:
-    """Retrieve a single institution by identifier."""
-
-    institution = get_institution(session, institution_id)
-    if institution is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Institution not found")
-
-    return InstitutionRead.model_validate(institution)
-
-
-@router.put("/{institution_id}", response_model=InstitutionRead)
-def update_institution_endpoint(
+@router.patch(
+    "/{institution_id}",
+    response_model=InstitutionRead,
+    summary="Update institution",
+)
+def update_institution(
     institution_id: int,
     payload: InstitutionUpdate,
-    session: Session = Depends(get_session),
+    service: InstitutionService = Depends(get_institution_service),
+    _current_user: object = Depends(get_current_user),
 ) -> InstitutionRead:
-    """Update an institution's attributes."""
+    """Update an existing institution."""
 
-    institution = get_institution(session, institution_id)
-    if institution is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Institution not found")
-
-    updated = update_institution(session, institution, payload.model_dump(exclude_unset=True))
-    return InstitutionRead.model_validate(updated)
+    return service.update_institution(institution_id, payload)
 
 
-@router.delete("/{institution_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_institution_endpoint(
+@router.delete(
+    "/{institution_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete institution",
+)
+def delete_institution(
     institution_id: int,
-    session: Session = Depends(get_session),
+    service: InstitutionService = Depends(get_institution_service),
+    _current_user: object = Depends(get_current_user),
 ) -> None:
-    """Delete an institution."""
+    """Delete an institution by its identifier."""
 
-    institution = get_institution(session, institution_id)
-    if institution is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Institution not found")
-
-    delete_institution(session, institution)
+    service.delete_institution(institution_id)
 
 
-__all__ = ["router"]
+__all__ = ["router", "get_institution_service"]
+

@@ -1,4 +1,4 @@
-"""Services package."""
+"""Domain service layer package."""
 
 from app.services.course import (
     create_course,

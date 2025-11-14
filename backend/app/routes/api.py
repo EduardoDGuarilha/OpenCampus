@@ -16,4 +16,7 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
+api_router.include_router(institution_router)
+
+
 __all__ = ["api_router"]
