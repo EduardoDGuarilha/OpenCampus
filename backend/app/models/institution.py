@@ -4,16 +4,13 @@ from __future__ import annotations
 
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlmodel import Field, Relationship, SQLModel
-
-if TYPE_CHECKING:
-    from app.models.course import Course
+from sqlmodel import Field, Relationship
 
 from .base import BaseModel
 
 if TYPE_CHECKING:  # pragma: no cover
-    from .course import Course
-    from .review import Review
+    from app.models.course import Course
+    from app.models.review import Review
 
 
 class Institution(BaseModel, table=True):
@@ -24,6 +21,7 @@ class Institution(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, nullable=False)
     courses: List["Course"] = Relationship(back_populates="institution")
+    reviews: List["Review"] = Relationship(back_populates="institution")
 
 
 __all__ = ["Institution"]

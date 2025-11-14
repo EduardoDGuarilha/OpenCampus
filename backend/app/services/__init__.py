@@ -14,8 +14,9 @@ from app.services.institution import (
     list_institutions,
     update_institution,
 )
-from app.services.user import UserService
 from app.services.professor import ProfessorService
+from app.services.review import ReviewService
+from app.services.user import UserService
 from app.services.subject import SubjectService
 
 __all__ = [
@@ -29,7 +30,8 @@ __all__ = [
     "get_institution",
     "list_institutions",
     "update_institution",
-    "UserService",
     "ProfessorService",
+    "ReviewService",
+    "UserService",
     "SubjectService",
 ]
