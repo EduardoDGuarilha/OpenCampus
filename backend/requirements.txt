@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlmodel
 sqlalchemy
 pydantic
+pydantic-settings
 python-dotenv
 passlib[bcrypt]
 python-jose
