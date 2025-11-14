@@ -34,7 +34,10 @@ class User(BaseModel, table=True):
     cpf: str = Field(sa_column=Column("cpf", String, unique=True, nullable=False))
     email: str = Field(sa_column=Column("email", String, unique=True, nullable=False))
     password_hash: str = Field(nullable=False)
-    course_id: Optional[int] = Field(default=None, foreign_key="course.id")
+    course_id: Optional[int] = Field(
+        default=None,
+        foreign_key="courses.id",
+    )
     role: UserRole = Field(nullable=False)
     validated: bool = Field(default=False, nullable=False)
 

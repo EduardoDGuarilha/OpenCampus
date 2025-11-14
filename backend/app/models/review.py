@@ -44,7 +44,7 @@ class Review(BaseModel, table=True):
     )
     course_id: Optional[int] = Field(
         default=None,
-        foreign_key="course.id",
+        foreign_key="courses.id",
         index=True,
     )
     professor_id: Optional[int] = Field(

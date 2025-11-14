@@ -20,7 +20,11 @@ class Professor(BaseModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, nullable=False)
-    course_id: int = Field(foreign_key="course.id", nullable=False, index=True)
+    course_id: int = Field(
+        foreign_key="courses.id",
+        nullable=False,
+        index=True,
+    )
 
     course: "Course" = Relationship(back_populates="professors")
     reviews: List["Review"] = Relationship(back_populates="professor")

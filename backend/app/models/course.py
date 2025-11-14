@@ -16,9 +16,15 @@ if TYPE_CHECKING:
 class Course(SQLModel, table=True):
     """Persistence model for academic courses."""
 
+    __tablename__ = "courses"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, nullable=False)
-    institution_id: int = Field(foreign_key="institution.id", nullable=False, index=True)
+    institution_id: int = Field(
+        foreign_key="institutions.id",
+        nullable=False,
+        index=True,
+    )
 
     institution: "Institution" = Relationship(back_populates="courses")
     professors: List["Professor"] = Relationship(back_populates="course")
