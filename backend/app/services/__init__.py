@@ -16,6 +16,7 @@ from app.services.institution import (
 )
 from app.services.user import UserService
 from app.services.professor import ProfessorService
+from app.services.subject import SubjectService
 
 __all__ = [
     "create_course",
@@ -30,4 +31,5 @@ __all__ = [
     "update_institution",
     "UserService",
     "ProfessorService",
+    "SubjectService",
 ]
