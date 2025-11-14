@@ -12,6 +12,12 @@ from app.schemas.institution import (
     InstitutionRead,
     InstitutionUpdate,
 )
+from app.schemas.user import (
+    UserBase,
+    UserCreate,
+    UserRead,
+    UserUpdate,
+)
 
 __all__ = [
     "CourseBase",
@@ -22,4 +28,8 @@ __all__ = [
     "InstitutionCreate",
     "InstitutionRead",
     "InstitutionUpdate",
+    "UserBase",
+    "UserCreate",
+    "UserRead",
+    "UserUpdate",
 ]
