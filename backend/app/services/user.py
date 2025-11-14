@@ -5,13 +5,11 @@ from __future__ import annotations
 from typing import Sequence
 
 from fastapi import HTTPException, status
-from passlib.context import CryptContext
 from sqlmodel import Session, select
 
 from app.models import Course, User
 from app.schemas.user import UserCreate, UserRead, UserUpdate
-
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.auth.security import hash_password
 
 
 class UserService:
@@ -47,7 +45,7 @@ class UserService:
         user = User(
             cpf=cpf,
             email=email,
-            password_hash=self._hash_password(payload.password),
+            password_hash=hash_password(payload.password),
             course_id=payload.course_id,
             role=payload.role,
             validated=payload.validated,
@@ -75,7 +73,7 @@ class UserService:
                 user.email = new_email
 
         if "password" in update_data:
-            user.password_hash = self._hash_password(update_data["password"])
+            user.password_hash = hash_password(update_data["password"])
 
         if "course_id" in update_data:
             course_id = update_data["course_id"]
@@ -93,9 +91,6 @@ class UserService:
         self.session.commit()
         self.session.refresh(user)
         return UserRead.model_validate(user)
-
-    def _hash_password(self, password: str) -> str:
-        return _pwd_context.hash(password)
 
     def _ensure_unique_cpf(self, cpf: str, *, exclude_user_id: int | None = None) -> None:
         statement = select(User).where(User.cpf == cpf)
