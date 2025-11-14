@@ -17,27 +17,68 @@ interface UserProfile {
   validated: boolean;
 }
 
+interface UserResponse extends UserProfile {
+  course_id: number | null;
+}
+
 type ReviewRatings = Record<CriterionKey, number | null>;
 
 interface ReviewModerationItem extends ReviewRatings {
   id: number;
   target_type: TargetType;
-  target_id: number;
-  target_name: string;
+  institution_id: number | null;
+  course_id: number | null;
+  professor_id: number | null;
+  subject_id: number | null;
   text: string;
   created_at: string;
   approved: boolean;
-  pending_reason?: string | null;
+  rejected: boolean;
+  resolved_by: number | null;
+  resolved_at: string | null;
+}
+
+interface ReviewListItem extends ReviewModerationItem {
+  targetName: string;
 }
 
 interface ChangeRequestResponse {
   id: number;
   target_type: TargetType;
-  target_name: string;
-  summary: string;
-  created_at: string;
+  payload: Record<string, unknown>;
   status: ChangeRequestStatus;
+  created_by: number;
+  created_at: string;
+  resolved_by: number | null;
+  resolved_at: string | null;
+}
+
+interface ChangeRequestListItem extends ChangeRequestResponse {
+  targetName: string;
   official: boolean;
+}
+
+interface InstitutionResponse {
+  id: number;
+  name: string;
+}
+
+interface CourseResponse {
+  id: number;
+  name: string;
+  institution_id: number;
+}
+
+interface ProfessorResponse {
+  id: number;
+  name: string;
+  course_id: number;
+}
+
+interface SubjectResponse {
+  id: number;
+  name: string;
+  course_id: number;
 }
 
 const TARGET_LABELS: Record<TargetType, string> = {
@@ -56,6 +97,195 @@ const RATING_KEYS: readonly CriterionKey[] = [
 ];
 
 const cardClasses = "rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-lg";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getReviewTargetId(review: ReviewModerationItem): number | null {
+  switch (review.target_type) {
+    case "INSTITUTION":
+      return review.institution_id ?? null;
+    case "COURSE":
+      return review.course_id ?? null;
+    case "PROFESSOR":
+      return review.professor_id ?? null;
+    case "SUBJECT":
+      return review.subject_id ?? null;
+    default:
+      return null;
+  }
+}
+
+async function fetchTargetName(targetType: TargetType, targetId: number): Promise<string> {
+  try {
+    switch (targetType) {
+      case "INSTITUTION": {
+        const response = await httpClient.get<InstitutionResponse>(`/institutions/${targetId}`);
+        return response.data.name;
+      }
+      case "COURSE": {
+        const response = await httpClient.get<CourseResponse>(`/courses/${targetId}`);
+        return response.data.name;
+      }
+      case "PROFESSOR": {
+        const response = await httpClient.get<ProfessorResponse>(`/professors/${targetId}`);
+        return response.data.name;
+      }
+      case "SUBJECT": {
+        const response = await httpClient.get<SubjectResponse>(`/subjects/${targetId}`);
+        return response.data.name;
+      }
+      default:
+        return `Registro #${targetId}`;
+    }
+  } catch (error) {
+    return `Registro #${targetId}`;
+  }
+}
+
+async function resolveReviewListItems(reviews: ReviewModerationItem[]): Promise<ReviewListItem[]> {
+  const targetMap = new Map<string, string>();
+  const uniqueTargets = new Map<string, { type: TargetType; id: number }>();
+
+  for (const review of reviews) {
+    const targetId = getReviewTargetId(review);
+    if (targetId !== null) {
+      const key = `${review.target_type}-${targetId}`;
+      if (!uniqueTargets.has(key)) {
+        uniqueTargets.set(key, { type: review.target_type, id: targetId });
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from(uniqueTargets.entries()).map(async ([key, { type, id }]) => {
+      const name = await fetchTargetName(type, id);
+      targetMap.set(key, name);
+    }),
+  );
+
+  return reviews.map((review) => {
+    const targetId = getReviewTargetId(review);
+    const key = targetId !== null ? `${review.target_type}-${targetId}` : null;
+    const targetName = key ? targetMap.get(key) ?? `Registro #${targetId}` : "Alvo não identificado";
+    return { ...review, targetName };
+  });
+}
+
+function getChangeRequestTargetId(changeRequest: ChangeRequestResponse): number | null {
+  const payload = changeRequest.payload;
+  if (!isRecord(payload)) {
+    return null;
+  }
+  const candidates = [payload["target_id"], payload["id"]];
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate;
+    }
+    if (typeof candidate === "string") {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return null;
+}
+
+async function fetchUserProfile(userId: number): Promise<UserResponse | null> {
+  try {
+    const response = await httpClient.get<UserResponse>(`/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    return null;
+  }
+}
+
+function extractChangeDetails(payload: Record<string, unknown>): Record<string, unknown> {
+  const potentialChanges = payload["changes"];
+  if (isRecord(potentialChanges)) {
+    return potentialChanges;
+  }
+  const potentialData = payload["data"];
+  if (isRecord(potentialData)) {
+    return potentialData;
+  }
+  const copy: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (key === "target_id" || key === "id" || key === "metadata") {
+      continue;
+    }
+    copy[key] = value;
+  }
+  return copy;
+}
+
+function formatChangeValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (value === null) {
+    return "null";
+  }
+  return "[objeto]";
+}
+
+async function resolveChangeRequestItems(
+  changeRequests: ChangeRequestResponse[],
+): Promise<ChangeRequestListItem[]> {
+  const targetMap = new Map<string, string>();
+  const userMap = new Map<number, UserResponse | null>();
+  const uniqueTargets = new Map<string, { type: TargetType; id: number }>();
+  const uniqueUsers = new Set<number>();
+
+  for (const request of changeRequests) {
+    const targetId = getChangeRequestTargetId(request);
+    if (targetId !== null) {
+      const key = `${request.target_type}-${targetId}`;
+      if (!uniqueTargets.has(key)) {
+        uniqueTargets.set(key, { type: request.target_type, id: targetId });
+      }
+    }
+    if (typeof request.created_by === "number") {
+      uniqueUsers.add(request.created_by);
+    }
+  }
+
+  await Promise.all(
+    Array.from(uniqueTargets.entries()).map(async ([key, { type, id }]) => {
+      const name = await fetchTargetName(type, id);
+      targetMap.set(key, name);
+    }),
+  );
+
+  await Promise.all(
+    Array.from(uniqueUsers.values()).map(async (userId) => {
+      const profile = await fetchUserProfile(userId);
+      userMap.set(userId, profile);
+    }),
+  );
+
+  return changeRequests.map((request) => {
+    const targetId = getChangeRequestTargetId(request);
+    const key = targetId !== null ? `${request.target_type}-${targetId}` : null;
+    const targetName = key ? targetMap.get(key) ?? `Registro #${targetId}` : "Alvo não identificado";
+    const userProfile = userMap.get(request.created_by) ?? null;
+    const official = Boolean(
+      userProfile &&
+        userProfile.validated &&
+        (userProfile.role === "PROFESSOR" || userProfile.role === "INSTITUTION"),
+    );
+    return {
+      ...request,
+      targetName,
+      official,
+    };
+  });
+}
 
 function getErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -118,11 +348,19 @@ function computeAverage(ratings: ReviewRatings): string {
   return average.toFixed(1);
 }
 
-function describeChangeRequest(changeRequest: ChangeRequestResponse): string {
-  if (changeRequest.summary.trim().length > 0) {
-    return changeRequest.summary;
+function describeChangeRequest(changeRequest: ChangeRequestListItem): string {
+  const payload = changeRequest.payload;
+  if (!isRecord(payload)) {
+    return "Solicitação sem detalhes específicos.";
   }
-  return "Solicitação sem resumo detalhado.";
+  const changes = extractChangeDetails(payload);
+  const entries = Object.entries(changes);
+  if (entries.length === 0) {
+    return "Solicitação sem detalhes específicos.";
+  }
+  const preview = entries.slice(0, 3).map(([field, value]) => `${field}: ${formatChangeValue(value)}`);
+  const hasMore = entries.length > preview.length;
+  return `${preview.join("; ")}${hasMore ? "…" : ""}`;
 }
 
 export default function AdminDashboardPage() {
@@ -130,9 +368,9 @@ export default function AdminDashboardPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [userError, setUserError] = useState<string | null>(null);
 
-  const [pendingReviews, setPendingReviews] = useState<ReviewModerationItem[]>([]);
-  const [approvedReviews, setApprovedReviews] = useState<ReviewModerationItem[]>([]);
-  const [changeRequests, setChangeRequests] = useState<ChangeRequestResponse[]>([]);
+  const [pendingReviews, setPendingReviews] = useState<ReviewListItem[]>([]);
+  const [approvedReviews, setApprovedReviews] = useState<ReviewListItem[]>([]);
+  const [changeRequests, setChangeRequests] = useState<ChangeRequestListItem[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -178,15 +416,22 @@ export default function AdminDashboardPage() {
     setDataError(null);
     try {
       const [pendingResponse, approvedResponse, changeRequestsResponse] = await Promise.all([
-        httpClient.get<ReviewModerationItem[]>("/moderation/reviews", { params: { status: "PENDING" } }),
-        httpClient.get<ReviewModerationItem[]>("/moderation/reviews", {
-          params: { status: "APPROVED", limit: 5 },
+        httpClient.get<ReviewModerationItem[]>("/reviews/moderation/pending", { params: { limit: 100 } }),
+        httpClient.get<ReviewModerationItem[]>("/reviews", {
+          params: { limit: 5 },
         }),
-        httpClient.get<ChangeRequestResponse[]>("/moderation/change-requests", { params: { status: "PENDING" } }),
+        httpClient.get<ChangeRequestResponse[]>("/change-requests", { params: { status: "PENDING" } }),
       ]);
-      setPendingReviews(pendingResponse.data);
-      setApprovedReviews(approvedResponse.data);
-      setChangeRequests(changeRequestsResponse.data);
+
+      const [pendingList, approvedList, changeRequestList] = await Promise.all([
+        resolveReviewListItems(pendingResponse.data),
+        resolveReviewListItems(approvedResponse.data),
+        resolveChangeRequestItems(changeRequestsResponse.data),
+      ]);
+
+      setPendingReviews(pendingList);
+      setApprovedReviews(approvedList);
+      setChangeRequests(changeRequestList);
       setSelectedReviewIds(() => new Set<number>());
     } catch (error) {
       setDataError(getErrorMessage(error));
@@ -234,7 +479,7 @@ export default function AdminDashboardPage() {
       try {
         const actionPath = action === "approve" ? "approve" : "reject";
         await Promise.all(
-          reviewIds.map((reviewId) => httpClient.post(`/moderation/reviews/${reviewId}/${actionPath}`)),
+          reviewIds.map((reviewId) => httpClient.post(`/reviews/${reviewId}/${actionPath}`)),
         );
         setActionFeedback({
           type: "success",
@@ -283,7 +528,7 @@ export default function AdminDashboardPage() {
         return next;
       });
       try {
-        await httpClient.post(`/moderation/change-requests/${changeRequestId}/${action}`);
+        await httpClient.post(`/change-requests/${changeRequestId}/${action}`);
         setActionFeedback({
           type: "success",
           message:
@@ -514,12 +759,7 @@ export default function AdminDashboardPage() {
                             <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
                               {TARGET_LABELS[review.target_type]}
                             </span>
-                            <span className="text-sm font-semibold text-white">{review.target_name}</span>
-                            {review.pending_reason && (
-                              <span className="text-xs text-amber-300/90">
-                                Motivo do destaque: {review.pending_reason}
-                              </span>
-                            )}
+                            <span className="text-sm font-semibold text-white">{review.targetName}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top text-sm text-slate-300">
@@ -576,7 +816,7 @@ export default function AdminDashboardPage() {
                   <span className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
                     {TARGET_LABELS[review.target_type]}
                   </span>
-                  <span className="text-base font-semibold text-white">{review.target_name}</span>
+                  <span className="text-base font-semibold text-white">{review.targetName}</span>
                   <span className="text-xs text-emerald-200/70">Aprovada em {formatDate(review.created_at)}</span>
                   <span className="text-xs font-medium text-emerald-200/80">Média geral: {computeAverage(review)}</span>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-emerald-100/90">{review.text}</p>
@@ -622,7 +862,7 @@ export default function AdminDashboardPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-base font-semibold text-white">{request.target_name}</p>
+                      <p className="text-base font-semibold text-white">{request.targetName}</p>
                       <p className="text-sm text-slate-300">{describeChangeRequest(request)}</p>
                       <p className="text-xs text-slate-400">Aberta em {formatDate(request.created_at)}</p>
                     </div>
