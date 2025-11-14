@@ -52,7 +52,10 @@ class ReviewRead(ReviewBase):
     professor_id: Optional[int] = None
     subject_id: Optional[int] = None
     approved: bool
+    rejected: bool
     created_at: datetime
+    resolved_by: Optional[int] = None
+    resolved_at: Optional[datetime] = None
 
 
 __all__ = [
