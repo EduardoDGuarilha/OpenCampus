@@ -12,6 +12,7 @@ from .base import BaseModel
 
 
 if TYPE_CHECKING:  # pragma: no cover
+    from app.models.comment import Comment
     from app.models.review import Review
 
 
@@ -38,6 +39,7 @@ class User(BaseModel, table=True):
     validated: bool = Field(default=False, nullable=False)
 
     reviews: List["Review"] = Relationship(back_populates="user")
+    comments: List["Comment"] = Relationship(back_populates="user")
 
 
 __all__ = ["User", "UserRole"]
