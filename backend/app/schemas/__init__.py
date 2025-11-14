@@ -1,5 +1,6 @@
 """Pydantic schemas package."""
 
+from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.change_request import (
     ChangeRequestBase,
     ChangeRequestCreate,
@@ -54,6 +55,7 @@ __all__ = [
     "ChangeRequestCreate",
     "ChangeRequestRead",
     "ChangeRequestUpdate",
+    "LoginRequest",
     "CommentBase",
     "CommentCreate",
     "CommentRead",
@@ -78,6 +80,7 @@ __all__ = [
     "SubjectCreate",
     "SubjectRead",
     "SubjectUpdate",
+    "TokenResponse",
     "UserBase",
     "UserCreate",
     "UserRead",

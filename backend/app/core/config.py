@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     project_name: str = "OpenCampus API"
     api_v1_prefix: str = "/api/v1"
     sqlite_file: Path = Path("opencampus.db")
+    secret_key: str = "change-me"
+    access_token_expire_minutes: int = 60
+    jwt_algorithm: str = "HS256"
 
     class Config:
         env_file = ".env"
