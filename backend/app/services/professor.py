@@ -46,7 +46,13 @@ class ProfessorService:
         self.session.refresh(professor)
         return ProfessorRead.model_validate(professor)
 
-    def update_professor(self, professor_id: int, payload: ProfessorUpdate) -> ProfessorRead:
+    def update_professor(
+        self,
+        professor_id: int,
+        payload: ProfessorUpdate,
+        *,
+        commit: bool = True,
+    ) -> ProfessorRead:
         professor = self.get_professor(professor_id)
         update_data = payload.model_dump(exclude_unset=True)
 
@@ -64,8 +70,11 @@ class ProfessorService:
             professor.course_id = course_id
 
         self.session.add(professor)
-        self.session.commit()
-        self.session.refresh(professor)
+        if commit:
+            self.session.commit()
+            self.session.refresh(professor)
+        else:
+            self.session.flush()
         return ProfessorRead.model_validate(professor)
 
     def delete_professor(self, professor_id: int) -> None:
