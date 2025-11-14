@@ -1,5 +1,6 @@
 """Data models package."""
 
+from app.models.change_request import ChangeRequest, ChangeRequestStatus
 from app.models.comment import Comment
 from app.models.course import Course
 from app.models.institution import Institution
@@ -18,4 +19,6 @@ __all__ = [
     "User",
     "UserRole",
     "Comment",
+    "ChangeRequest",
+    "ChangeRequestStatus",
 ]
