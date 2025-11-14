@@ -5,7 +5,6 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.auth.dependencies import get_current_user
 from app.database.session import get_session
 from app.schemas.professor import (
     ProfessorCreate,
@@ -13,6 +12,7 @@ from app.schemas.professor import (
     ProfessorUpdate,
 )
 from app.services.professor import ProfessorService
+from app.routes.course import require_moderator
 
 router = APIRouter(prefix="/professors", tags=["professors"])
 
@@ -59,7 +59,7 @@ def get_professor(
 def create_professor(
     payload: ProfessorCreate,
     service: ProfessorService = Depends(get_professor_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> ProfessorRead:
     """Create a new professor record linked to a course."""
 
@@ -75,7 +75,7 @@ def update_professor(
     professor_id: int,
     payload: ProfessorUpdate,
     service: ProfessorService = Depends(get_professor_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> ProfessorRead:
     """Update an existing professor entry."""
 
@@ -90,7 +90,7 @@ def update_professor(
 def delete_professor(
     professor_id: int,
     service: ProfessorService = Depends(get_professor_service),
-    _current_user: object = Depends(get_current_user),
+    _moderator: object = Depends(require_moderator),
 ) -> None:
     """Remove a professor entry."""
 

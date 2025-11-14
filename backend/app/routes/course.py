@@ -5,7 +5,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
+from app.auth.dependencies import get_current_user
 from app.database.session import get_session
+from app.models.user import User, UserRole
 from app.schemas import CourseCreate, CourseRead, CourseUpdate
 from app.services import (
     create_course,
@@ -16,6 +18,14 @@ from app.services import (
 )
 
 router = APIRouter(prefix="/courses", tags=["courses"])
+
+
+def require_moderator(current_user: User = Depends(get_current_user)) -> User:
+    """Ensure the authenticated user has moderator privileges."""
+
+    if current_user.role != UserRole.MODERATOR:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+    return current_user
 
 
 def _handle_value_error(error: ValueError) -> None:
@@ -41,6 +51,7 @@ def list_courses_endpoint(
 def create_course_endpoint(
     payload: CourseCreate,
     session: Session = Depends(get_session),
+    _moderator: User = Depends(require_moderator),
 ) -> CourseRead:
     """Create a new course entry."""
 
@@ -71,6 +82,7 @@ def update_course_endpoint(
     course_id: int,
     payload: CourseUpdate,
     session: Session = Depends(get_session),
+    _moderator: User = Depends(require_moderator),
 ) -> CourseRead:
     """Update a course's attributes."""
 
@@ -91,6 +103,7 @@ def update_course_endpoint(
 def delete_course_endpoint(
     course_id: int,
     session: Session = Depends(get_session),
+    _moderator: User = Depends(require_moderator),
 ) -> None:
     """Delete a course."""
 
@@ -101,4 +114,4 @@ def delete_course_endpoint(
     delete_course(session, course)
 
 
-__all__ = ["router"]
+__all__ = ["router", "require_moderator"]
